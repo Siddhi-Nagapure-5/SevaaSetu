@@ -77,7 +77,7 @@ export function SiteHeader() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="cursor-pointer">
-                  <Link to={role === 'receiver' ? '/receiver-dashboard' : role === 'admin' ? '/admin' : '/donor-dashboard'}>
+                  <Link to="/dashboard">
                     <LayoutDashboard className="mr-2 h-4 w-4" />
                     <span>Dashboard</span>
                   </Link>

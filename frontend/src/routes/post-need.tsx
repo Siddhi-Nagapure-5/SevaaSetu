@@ -1,7 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
-import { Check, ArrowRight } from "lucide-react";
+import { Check, ArrowRight, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { useRouter } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/post-need")({
   head: () => ({
@@ -52,7 +54,8 @@ const initial: FormState = {
 function PostNeedPage() {
   const [form, setForm] = useState<FormState>(initial);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
-  const [submitted, setSubmitted] = useState<FormState | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -72,57 +75,31 @@ function PostNeedPage() {
     return e;
   };
 
-  const onSubmit = (ev: React.FormEvent) => {
+  const onSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault();
     const e = validate(form);
     setErrors(e);
+    
     if (Object.keys(e).length === 0) {
-      setSubmitted(form);
+      setIsSubmitting(true);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      setIsSubmitting(false);
+      toast.success("Need posted successfully!", {
+        description: `"${form.title}" is now live and our matching engine is looking for donors in ${form.city}.`,
+        action: {
+          label: "View live needs",
+          onClick: () => router.navigate({ to: "/needs" })
+        },
+        duration: 6000,
+      });
+      
       setForm(initial);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
-
-  if (submitted) {
-    return (
-      <div className="min-h-screen bg-background">
-        <SiteHeader />
-        <section className="mx-auto max-w-2xl px-6 py-20">
-          <div className="rounded-3xl border border-accent/60 bg-accent/15 p-8">
-            <div className="grid h-10 w-10 place-items-center rounded-full bg-sage text-sage-foreground">
-              <Check className="h-5 w-5" />
-            </div>
-            <h1 className="mt-5 font-display text-3xl font-bold tracking-tight">Need posted</h1>
-            <p className="mt-2 text-muted-foreground">
-              "<span className="font-medium text-foreground">{submitted.title}</span>" is now live.
-              Our matching engine is surfacing donors in {submitted.city} who can help.
-            </p>
-            <dl className="mt-6 grid grid-cols-2 gap-4 rounded-2xl border border-border bg-card p-5 text-sm">
-              <Info label="Category" value={submitted.category} />
-              <Info label="Urgency" value={submitted.urgency} />
-              <Info label="Location" value={`${submitted.city}, ${submitted.state}`} />
-              <Info label="Goal" value={submitted.goal} />
-            </dl>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <button
-                onClick={() => setSubmitted(null)}
-                className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft transition-transform hover:scale-[1.02]"
-              >
-                Post another need <ArrowRight className="h-4 w-4" />
-              </button>
-              <Link
-                to="/needs"
-                className="inline-flex items-center rounded-full border border-border bg-card px-5 py-2.5 text-sm font-semibold hover:bg-muted"
-              >
-                Browse live needs
-              </Link>
-            </div>
-          </div>
-        </section>
-        <SiteFooter />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -239,9 +216,11 @@ function PostNeedPage() {
 
             <button
               type="submit"
-              className="inline-flex w-full items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-soft transition-transform hover:scale-[1.01] sm:w-auto"
+              disabled={isSubmitting}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-soft transition-transform hover:scale-[1.01] sm:w-auto disabled:opacity-70 disabled:hover:scale-100"
             >
-              Post need
+              {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isSubmitting ? "Running content moderation check..." : "Post need"}
             </button>
           </form>
         </div>

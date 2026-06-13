@@ -93,13 +93,13 @@ function Login() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Button variant="outline" className="h-11 bg-background" onClick={() => handleLogin('donor', '/donor-dashboard')}>
+            <Button variant="outline" className="h-11 bg-background" onClick={() => handleLogin('donor', '/dashboard')}>
               Demo: Donor
             </Button>
-            <Button variant="outline" className="h-11 bg-background" onClick={() => handleLogin('receiver', '/receiver-dashboard')}>
+            <Button variant="outline" className="h-11 bg-background" onClick={() => handleLogin('receiver', '/dashboard')}>
               Demo: Org
             </Button>
-            <Button variant="outline" className="h-11 bg-background col-span-2" onClick={() => handleLogin('admin', '/admin')}>
+            <Button variant="outline" className="h-11 bg-background col-span-2" onClick={() => handleLogin('admin', '/dashboard')}>
               Demo: Admin
             </Button>
           </div>

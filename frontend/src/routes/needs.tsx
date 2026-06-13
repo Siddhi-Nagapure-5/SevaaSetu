@@ -18,18 +18,21 @@ export const Route = createFileRoute("/needs")({
 });
 
 const categories: ("All" | Need["category"])[] = ["All", "Food", "Clothing", "Education", "Medical", "Shelter", "Services"];
+const urgencies: ("All" | Need["urgency"])[] = ["All", "Critical", "High", "Moderate"];
 
 function NeedsPage() {
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<(typeof categories)[number]>("All");
+  const [urg, setUrg] = useState<(typeof urgencies)[number]>("All");
 
   const filtered = useMemo(() => {
     return needs.filter((n) => {
       const matchCat = cat === "All" || n.category === cat;
+      const matchUrg = urg === "All" || n.urgency === urg;
       const matchQ = !q || (n.title + n.org + n.location).toLowerCase().includes(q.toLowerCase());
-      return matchCat && matchQ;
+      return matchCat && matchUrg && matchQ;
     });
-  }, [q, cat]);
+  }, [q, cat, urg]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -50,20 +53,39 @@ function NeedsPage() {
               className="w-full rounded-full border border-input bg-card py-2.5 pl-9 pr-4 text-sm outline-none ring-ring/40 transition-all focus:ring-2"
             />
           </div>
-          <div className="flex flex-wrap gap-2">
-            {categories.map((c) => (
-              <button
-                key={c}
-                onClick={() => setCat(c)}
-                className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
-                  cat === c
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-card text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {c}
-              </button>
-            ))}
+          <div className="flex flex-col gap-2 md:items-end">
+            <div className="flex flex-wrap gap-2">
+              <span className="text-xs font-semibold uppercase text-muted-foreground self-center mr-2">Category:</span>
+              {categories.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setCat(c)}
+                  className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                    cat === c
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-card text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <span className="text-xs font-semibold uppercase text-muted-foreground self-center mr-2">Urgency:</span>
+              {urgencies.map((u) => (
+                <button
+                  key={u}
+                  onClick={() => setUrg(u)}
+                  className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                    urg === u
+                      ? "border-sage bg-sage text-sage-foreground"
+                      : "border-border bg-card text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {u}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

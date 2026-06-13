@@ -2,7 +2,16 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Package, Activity, TrendingUp } from "lucide-react";
+import { Package, Activity, TrendingUp, CheckCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/donor-dashboard")({
   component: DonorDashboard,
@@ -80,14 +89,44 @@ function DonorDashboard() {
                   Pledged on {pledge.date} · Type: {pledge.type}
                 </div>
               </div>
-              <div className="text-sm sm:text-right">
+              <div className="text-sm sm:text-right flex flex-col items-end gap-2">
                 {pledge.match ? (
                   <>
-                    <div className="text-muted-foreground">Matched with:</div>
-                    <div className="font-medium text-foreground">{pledge.match}</div>
+                    <div>
+                      <div className="text-muted-foreground">Matched with:</div>
+                      <div className="font-medium text-foreground">{pledge.match}</div>
+                    </div>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">View Impact</Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Pledge Details</DialogTitle>
+                          <DialogDescription>
+                            Your pledge of {pledge.amount} was matched with {pledge.match}.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 space-y-4">
+                          <div className="flex items-center gap-3 p-4 border rounded-lg bg-muted/20">
+                            <CheckCircle className="h-5 w-5 text-sage" />
+                            <div>
+                              <p className="font-semibold text-sm">Status: {pledge.status}</p>
+                              <p className="text-xs text-muted-foreground">The organization has confirmed receipt.</p>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <h4 className="font-semibold text-sm">A note from {pledge.match}</h4>
+                            <p className="text-sm text-muted-foreground italic">"Thank you so much! Your donation has directly helped us provide for the community this week."</p>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </>
                 ) : (
-                  <span className="text-muted-foreground italic">Waiting for a match...</span>
+                  <div className="h-full flex items-center">
+                    <span className="text-muted-foreground italic">Waiting for a match...</span>
+                  </div>
                 )}
               </div>
             </Card>

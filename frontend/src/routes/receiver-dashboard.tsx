@@ -4,6 +4,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileText, Clock, CheckCircle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/receiver-dashboard")({
   component: ReceiverDashboard,
@@ -87,9 +96,56 @@ function ReceiverDashboard() {
                     <div className="font-medium">{need.matchCount} Matches</div>
                     <div className="text-muted-foreground text-xs">incoming</div>
                   </div>
-                  <Button variant="outline" size="sm">View Details</Button>
+                  
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">View Details</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>{need.title}</DialogTitle>
+                        <DialogDescription>
+                          Posted on {need.date} · Category: {need.category}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="py-4 space-y-4">
+                        <div className="space-y-2">
+                          <h4 className="font-semibold text-sm">Description</h4>
+                          <p className="text-sm text-muted-foreground">This is a detailed description of the need. We require these items as soon as possible to help the local community.</p>
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="font-semibold text-sm">Incoming Matches</h4>
+                          {need.matchCount > 0 ? (
+                            <div className="p-3 border rounded-md bg-muted/30 flex items-center justify-between">
+                              <span className="text-sm">Donation offered by <b>Donor User</b></span>
+                              <Button size="sm" variant="secondary">Accept Match</Button>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">No matches yet. The platform is actively searching.</p>
+                          )}
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
                   {need.status !== "Fulfilled" && (
-                    <Button variant="secondary" size="sm">Mark Fulfilled</Button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="secondary" size="sm">Mark Fulfilled</Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Mark as Fulfilled?</DialogTitle>
+                          <DialogDescription>
+                            Are you sure you want to mark "{need.title}" as completely fulfilled? This will remove it from the active broadcast board.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter className="mt-4">
+                          <Button variant="outline">Cancel</Button>
+                          <Button variant="secondary">Confirm Fulfillment</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   )}
                 </div>
               </div>

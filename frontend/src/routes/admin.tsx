@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, ShieldAlert, Activity, CheckCircle2, XCircle } from "lucide-react";
+import { Users, ShieldAlert, Activity, CheckCircle2, XCircle, FileText } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin")({
   component: AdminDashboard,
@@ -20,7 +21,42 @@ const mockNeeds = [
   { id: 2, org: "City Orphanage", title: "Daily meals for 50 children", status: "Approved" },
 ];
 
+const mockMatches = [
+  { id: 1, need: "200 winter blankets for shelter", receiver: "Aasha Foundation", donorItem: "150 gently used blankets", donor: "Rahul Sharma", matchScore: "85%" },
+  { id: 2, need: "Daily meals for 50 children", receiver: "City Orphanage", donorItem: "Catering for 50 people", donor: "TCS Corporate", matchScore: "100%" },
+];
+
 function AdminDashboard() {
+  const handleApproveKYC = (name: string) => {
+    toast.success("KYC Approved", {
+      description: `${name} has been verified and can now post needs on the platform.`,
+    });
+  };
+
+  const handleRejectKYC = (name: string) => {
+    toast.error("KYC Rejected", {
+      description: `${name}'s application was rejected. They have been notified.`,
+    });
+  };
+
+  const handleApprovePost = (title: string) => {
+    toast.success("Post Approved", {
+      description: `"${title}" is now live on the public needs board.`,
+    });
+  };
+
+  const handleApproveMatch = (id: number) => {
+    toast.success("Match Approved!", {
+      description: `Both the donor and the receiver have been notified of the successful match.`,
+    });
+  };
+
+  const handleExport = (type: string) => {
+    toast.success("Export Started", {
+      description: `Your ${type} file is being generated and will download shortly.`,
+    });
+  };
+
   return (
     <div className="min-h-screen bg-muted/20">
       <SiteHeader />
@@ -66,9 +102,11 @@ function AdminDashboard() {
         </div>
 
         <Tabs defaultValue="kyc" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4 mb-6">
             <TabsTrigger value="kyc">KYC Verification</TabsTrigger>
             <TabsTrigger value="moderation">Needs Moderation</TabsTrigger>
+            <TabsTrigger value="matches">Suggested Matches</TabsTrigger>
+            <TabsTrigger value="reports">Reports</TabsTrigger>
           </TabsList>
           
           <TabsContent value="kyc" className="space-y-4">
@@ -88,10 +126,19 @@ function AdminDashboard() {
                 </div>
                 {org.status === "Pending KYC" && (
                   <div className="flex gap-2">
-                    <Button variant="default" size="sm" className="bg-sage hover:bg-sage/90 text-sage-foreground">
+                    <Button 
+                      onClick={() => handleApproveKYC(org.name)}
+                      variant="default" 
+                      size="sm" 
+                      className="bg-sage hover:bg-sage/90 text-sage-foreground"
+                    >
                       <CheckCircle2 className="mr-2 h-4 w-4" /> Approve
                     </Button>
-                    <Button variant="destructive" size="sm">
+                    <Button 
+                      onClick={() => handleRejectKYC(org.name)}
+                      variant="destructive" 
+                      size="sm"
+                    >
                       <XCircle className="mr-2 h-4 w-4" /> Reject
                     </Button>
                   </div>
@@ -117,11 +164,68 @@ function AdminDashboard() {
                 </div>
                 {need.status === "Pending Approval" && (
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm">Approve Post</Button>
+                    <Button 
+                      onClick={() => handleApprovePost(need.title)}
+                      variant="outline" 
+                      size="sm"
+                    >
+                      Approve Post
+                    </Button>
                   </div>
                 )}
               </Card>
             ))}
+          </TabsContent>
+
+          <TabsContent value="matches" className="space-y-4">
+            <h2 className="text-xl font-semibold mb-4">Suggested Matches for Review</h2>
+            {mockMatches.map((match) => (
+              <Card key={match.id} className="p-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div className="flex-1 grid gap-4 md:grid-cols-2">
+                    <div>
+                      <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-1">Need (Receiver)</div>
+                      <div className="font-semibold">{match.need}</div>
+                      <div className="text-sm text-muted-foreground">by {match.receiver}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-1">Pledge (Donor)</div>
+                      <div className="font-semibold">{match.donorItem}</div>
+                      <div className="text-sm text-muted-foreground">by {match.donor}</div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center gap-3 border-l pl-6">
+                    <div className="text-center">
+                      <div className="text-xs text-muted-foreground">Match Score</div>
+                      <div className="text-2xl font-bold text-sage">{match.matchScore}</div>
+                    </div>
+                    <Button onClick={() => handleApproveMatch(match.id)} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+                      Approve Match
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </TabsContent>
+
+          <TabsContent value="reports" className="space-y-4">
+            <h2 className="text-xl font-semibold mb-4">Export Data & Reports</h2>
+            <Card className="p-6">
+              <h3 className="font-semibold text-lg mb-2">Donation Records & Transaction History</h3>
+              <p className="text-muted-foreground text-sm mb-6">Extract the full transaction history or matched donations into your preferred format for auditing and offline records.</p>
+              
+              <div className="flex flex-wrap gap-4">
+                <Button onClick={() => handleExport('Excel')} variant="outline" className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" /> Export to Excel
+                </Button>
+                <Button onClick={() => handleExport('PDF')} variant="outline" className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" /> Export to PDF
+                </Button>
+                <Button onClick={() => handleExport('Email')} variant="secondary" className="flex items-center gap-2">
+                  <Users className="h-4 w-4" /> Email to Admins
+                </Button>
+              </div>
+            </Card>
           </TabsContent>
         </Tabs>
       </main>
