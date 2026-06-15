@@ -1,4 +1,4 @@
-import fetch from "node-fetch"; // or you can use native fetch if node version is > 18.
+// Relying on native fetch API (Node 18+)
 // Since node version in package is not explicitly > 18 everywhere, we'll try native fetch first.
 
 const BASE_URL = "http://localhost:3001/api";
