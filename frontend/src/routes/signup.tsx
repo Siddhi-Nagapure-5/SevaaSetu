@@ -3,13 +3,55 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { HeartHandshake, ArrowLeft } from "lucide-react";
+import { HeartHandshake, ArrowLeft, Loader2 } from "lucide-react";
+import { useAuth } from "@/lib/auth";
+import { useRouter } from "@tanstack/react-router";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/signup")({
   component: Signup,
 });
 
 function Signup() {
+  const { login } = useAuth();
+  const router = useRouter();
+  
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  
+  const [orgName, setOrgName] = useState("");
+  const [orgEmail, setOrgEmail] = useState("");
+  const [orgPassword, setOrgPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSignup = async (role: "DONOR" | "RECEIVER", e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const payload = role === "DONOR" 
+        ? { name: `${firstName} ${lastName}`, email, password, role: "DONOR" }
+        : { name: orgName, email: orgEmail, password: orgPassword, role: "RECEIVER" };
+        
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Registration failed");
+
+      login(data.token, data.user);
+      router.navigate({ to: "/dashboard" });
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       {/* Left side - Visual/Brand */}
@@ -60,55 +102,61 @@ function Signup() {
             </TabsList>
             
             <TabsContent value="donor" className="space-y-5">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="first-name">First name</Label>
-                  <Input id="first-name" placeholder="John" required className="h-11" />
+              <form onSubmit={(e) => handleSignup("DONOR", e)} className="space-y-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="first-name">First name</Label>
+                    <Input id="first-name" placeholder="John" required className="h-11" value={firstName} onChange={e => setFirstName(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="last-name">Last name</Label>
+                    <Input id="last-name" placeholder="Doe" required className="h-11" value={lastName} onChange={e => setLastName(e.target.value)} />
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="last-name">Last name</Label>
-                  <Input id="last-name" placeholder="Doe" required className="h-11" />
+                  <Label htmlFor="donor-email">Email</Label>
+                  <Input id="donor-email" type="email" placeholder="john@example.com" required className="h-11" value={email} onChange={e => setEmail(e.target.value)} />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="donor-email">Email</Label>
-                <Input id="donor-email" type="email" placeholder="john@example.com" required className="h-11" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="donor-password">Password</Label>
-                <Input id="donor-password" type="password" required className="h-11" />
-              </div>
-              <Button className="w-full h-11 text-base mt-2" asChild>
-                <Link to="/login">Create Donor Account</Link>
-              </Button>
+                <div className="space-y-2">
+                  <Label htmlFor="donor-password">Password</Label>
+                  <Input id="donor-password" type="password" required className="h-11" value={password} onChange={e => setPassword(e.target.value)} />
+                </div>
+                <Button type="submit" className="w-full h-11 text-base mt-2" disabled={isLoading}>
+                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Create Donor Account
+                </Button>
+              </form>
             </TabsContent>
             
             <TabsContent value="receiver" className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="org-name">Organization Name</Label>
-                <Input id="org-name" placeholder="Aasha Foundation" required className="h-11" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="org-email">Official Email</Label>
-                <Input id="org-email" type="email" placeholder="contact@aasha.org" required className="h-11" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+              <form onSubmit={(e) => handleSignup("RECEIVER", e)} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="reg-type">Registration Type</Label>
-                  <Input id="reg-type" placeholder="NGO/Trust" required className="h-11" />
+                  <Label htmlFor="org-name">Organization Name</Label>
+                  <Input id="org-name" placeholder="Aasha Foundation" required className="h-11" value={orgName} onChange={e => setOrgName(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="reg-number">KYC Reg Number</Label>
-                  <Input id="reg-number" placeholder="REG-12345" required className="h-11" />
+                  <Label htmlFor="org-email">Official Email</Label>
+                  <Input id="org-email" type="email" placeholder="contact@aasha.org" required className="h-11" value={orgEmail} onChange={e => setOrgEmail(e.target.value)} />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="org-password">Password</Label>
-                <Input id="org-password" type="password" required className="h-11" />
-              </div>
-              <Button className="w-full h-11 text-base mt-2" asChild>
-                <Link to="/login">Create Receiver Account</Link>
-              </Button>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-type">Registration Type</Label>
+                    <Input id="reg-type" placeholder="NGO/Trust" required className="h-11" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-number">KYC Reg Number</Label>
+                    <Input id="reg-number" placeholder="REG-12345" required className="h-11" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="org-password">Password</Label>
+                  <Input id="org-password" type="password" required className="h-11" value={orgPassword} onChange={e => setOrgPassword(e.target.value)} />
+                </div>
+                <Button type="submit" className="w-full h-11 text-base mt-2" disabled={isLoading}>
+                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Create Receiver Account
+                </Button>
+              </form>
             </TabsContent>
           </Tabs>
 

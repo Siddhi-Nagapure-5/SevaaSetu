@@ -1,5 +1,5 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useMockAuth } from "@/lib/mock-auth";
+import { useAuth } from "@/lib/auth";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -8,7 +8,7 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 function DashboardRedirect() {
-  const { role, isLoggedIn } = useMockAuth();
+  const { role, isLoggedIn } = useAuth();
   const router = useRouter();
 
   useEffect(() => {

@@ -4,6 +4,7 @@ import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { Package, IndianRupee, Wrench, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "@tanstack/react-router";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/donate")({
   head: () => ({
@@ -30,24 +31,41 @@ function DonatePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const { token } = useAuth();
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setIsSubmitting(false);
-    toast.success("Pledge received!", {
-      description: `We're matching your ${kind} pledge now. You'll get a confirmation within minutes.`,
-      action: {
-        label: "View Dashboard",
-        onClick: () => router.navigate({ to: "/dashboard" })
-      },
-      duration: 6000,
-    });
-    
-    (e.target as HTMLFormElement).reset();
+    try {
+      const formData = new FormData(e.currentTarget);
+      formData.append("category", kind);
+      
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/donations`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Submission failed");
+
+      toast.success("Pledge received!", {
+        description: `We're matching your ${kind} pledge now. You'll get a confirmation within minutes.`,
+        action: {
+          label: "View Dashboard",
+          onClick: () => router.navigate({ to: "/dashboard" })
+        },
+        duration: 6000,
+      });
+      
+      e.currentTarget.reset();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -92,10 +110,11 @@ function DonatePage() {
             onSubmit={handleSubmit}
           >
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Your name" placeholder="Aanya Verma" required />
-                <Field label="City" placeholder="Pune" required />
+                <Field name="title" label="Your name" placeholder="Aanya Verma" required />
+                <Field name="city" label="City" placeholder="Pune" required />
               </div>
               <Field
+                name="quantity"
                 label={kind === "funds" ? "Amount (₹)" : kind === "items" ? "What & how many" : "Service offered"}
                 placeholder={kind === "funds" ? "5000" : kind === "items" ? "20 blankets, lightly used" : "Pediatric consults, 2 hrs/week"}
                 required
@@ -110,12 +129,12 @@ function DonatePage() {
                               <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
                               <p className="text-xs text-muted-foreground">PNG, JPG up to 10MB</p>
                           </div>
-                          <input type="file" className="hidden" accept="image/*" multiple />
+                          <input name="photos" type="file" className="hidden" accept="image/*" multiple />
                       </label>
                   </div>
                 </label>
               )}
-              <Field label="Notes (optional)" placeholder="Pickup window, condition, etc." textarea />
+              <Field name="description" label="Notes (optional)" placeholder="Pickup window, condition, etc." textarea />
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -160,12 +179,14 @@ function Field({
   label,
   placeholder,
   textarea,
-  required
+  required,
+  name
 }: {
   label: string;
   placeholder?: string;
   textarea?: boolean;
   required?: boolean;
+  name?: string;
 }) {
   const cls =
     "mt-1.5 w-full rounded-xl border border-input bg-card px-4 py-2.5 text-sm outline-none ring-ring/40 transition-all focus:ring-2";
@@ -173,9 +194,9 @@ function Field({
     <label className="block">
       <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}{required && <span className="text-destructive ml-1">*</span>}</span>
       {textarea ? (
-        <textarea rows={3} placeholder={placeholder} className={cls} required={required} />
+        <textarea name={name} rows={3} placeholder={placeholder} className={cls} required={required} />
       ) : (
-        <input placeholder={placeholder} className={cls} required={required} />
+        <input name={name} placeholder={placeholder} className={cls} required={required} />
       )}
     </label>
   );

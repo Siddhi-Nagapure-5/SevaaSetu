@@ -2,21 +2,42 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { HeartHandshake, ArrowLeft } from "lucide-react";
-import { useMockAuth } from "@/lib/mock-auth";
+import { HeartHandshake, ArrowLeft, Loader2 } from "lucide-react";
+import { useAuth } from "@/lib/auth";
 import { useRouter } from "@tanstack/react-router";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
   component: Login,
 });
 
 function Login() {
-  const { login } = useMockAuth();
+  const { login } = useAuth();
   const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (role: string, path: string) => {
-    login(role);
-    router.navigate({ to: path });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Login failed");
+
+      login(data.token, data.user);
+      router.navigate({ to: "/dashboard" });
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -62,10 +83,10 @@ function Login() {
             </p>
           </div>
 
-          <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-5" onSubmit={handleSubmit}>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="name@example.com" required className="h-11" />
+              <Input id="email" type="email" placeholder="name@example.com" required className="h-11" value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             
             <div className="space-y-2">
@@ -75,34 +96,14 @@ function Login() {
                   Forgot password?
                 </Link>
               </div>
-              <Input id="password" type="password" required className="h-11" />
+              <Input id="password" type="password" required className="h-11" value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
 
-            <Button type="submit" className="w-full h-11 text-base">
+            <Button type="submit" className="w-full h-11 text-base" disabled={isLoading}>
+              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Sign in
             </Button>
           </form>
-
-          <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border"></div>
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Button variant="outline" className="h-11 bg-background" onClick={() => handleLogin('donor', '/dashboard')}>
-              Demo: Donor
-            </Button>
-            <Button variant="outline" className="h-11 bg-background" onClick={() => handleLogin('receiver', '/dashboard')}>
-              Demo: Org
-            </Button>
-            <Button variant="outline" className="h-11 bg-background col-span-2" onClick={() => handleLogin('admin', '/dashboard')}>
-              Demo: Admin
-            </Button>
-          </div>
 
           <p className="mt-8 text-center text-sm text-muted-foreground">
             Don't have an account?{" "}

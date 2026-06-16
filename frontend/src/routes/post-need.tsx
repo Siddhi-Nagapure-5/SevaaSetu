@@ -4,6 +4,7 @@ import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { Check, ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "@tanstack/react-router";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/post-need")({
   head: () => ({
@@ -56,6 +57,7 @@ function PostNeedPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
+  const { token } = useAuth();
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -83,21 +85,35 @@ function PostNeedPage() {
     if (Object.keys(e).length === 0) {
       setIsSubmitting(true);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      setIsSubmitting(false);
-      toast.success("Need posted successfully!", {
-        description: `"${form.title}" is now live and our matching engine is looking for donors in ${form.city}.`,
-        action: {
-          label: "View live needs",
-          onClick: () => router.navigate({ to: "/needs" })
-        },
-        duration: 6000,
-      });
-      
-      setForm(initial);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/needs`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify(form)
+        });
+        
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to post need");
+
+        toast.success("Need posted successfully!", {
+          description: `"${form.title}" is now live and our matching engine is looking for donors in ${form.city}.`,
+          action: {
+            label: "View live needs",
+            onClick: () => router.navigate({ to: "/needs" })
+          },
+          duration: 6000,
+        });
+        
+        setForm(initial);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch (err: any) {
+        toast.error(err.message);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 

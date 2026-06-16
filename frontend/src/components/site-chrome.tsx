@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { HeartHandshake, User, Settings, LogOut, LayoutDashboard } from "lucide-react";
-import { useMockAuth } from "@/lib/mock-auth";
+import { useAuth } from "@/lib/auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,7 +21,7 @@ const links = [
 ];
 
 export function SiteHeader() {
-  const { isLoggedIn, role, logout } = useMockAuth();
+  const { isLoggedIn, role, logout } = useAuth();
   const router = useRouter();
 
   const handleLogout = () => {

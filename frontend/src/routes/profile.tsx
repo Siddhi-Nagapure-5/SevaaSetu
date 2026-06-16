@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Mail, Phone, ShieldCheck, Edit3 } from "lucide-react";
-import { useMockAuth } from "@/lib/mock-auth";
+import { useAuth } from "@/lib/auth";
 import { useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
 
@@ -16,7 +16,7 @@ export const Route = createFileRoute("/profile")({
 });
 
 function ProfilePage() {
-  const { role, isLoggedIn } = useMockAuth();
+  const { role, isLoggedIn } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
