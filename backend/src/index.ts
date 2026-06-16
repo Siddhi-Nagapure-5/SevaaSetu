@@ -5,6 +5,9 @@ import { PrismaClient } from "@prisma/client";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import { authenticateToken, authorizeRoles, AuthRequest } from "./middleware/auth";
 
 dotenv.config();
 
@@ -33,15 +36,21 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-// --- Auth Routes (Simplified for Hackathon/Demo) ---
+// --- Auth Routes ---
 app.post("/api/auth/register", async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
-    // In a real app, hash password.
+    
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
     const user = await prisma.user.create({
-      data: { name, email, password, role, kycStatus: role === "RECEIVER" ? "PENDING" : "VERIFIED" },
+      data: { name, email, password: hashedPassword, role, kycStatus: role === "RECEIVER" ? "PENDING" : "VERIFIED" },
     });
-    res.json({ user, token: `mock_jwt_${user.id}` });
+    
+    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET || "default_secret", { expiresIn: "1d" });
+    
+    res.json({ user, token });
   } catch (error) {
     res.status(400).json({ error: "Registration failed" });
   }
@@ -51,17 +60,25 @@ app.post("/api/auth/login", async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || user.password !== password) return res.status(401).json({ error: "Invalid credentials" });
-    res.json({ user, token: `mock_jwt_${user.id}` });
+    
+    if (!user) return res.status(401).json({ error: "Invalid credentials" });
+    
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) return res.status(401).json({ error: "Invalid credentials" });
+
+    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET || "default_secret", { expiresIn: "1d" });
+    
+    res.json({ user, token });
   } catch (error) {
     res.status(500).json({ error: "Login failed" });
   }
 });
 
 // --- Donations Routes ---
-app.post("/api/donations", upload.array("photos"), async (req, res) => {
+app.post("/api/donations", authenticateToken, authorizeRoles("DONOR"), upload.array("photos"), async (req, res) => {
   try {
-    const { donorId, category, title, description, quantity } = req.body;
+    const donorId = (req as AuthRequest).user!.id;
+    const { category, title, description, quantity } = req.body;
     const images = req.files ? (req.files as Express.Multer.File[]).map(f => `/uploads/${f.filename}`) : [];
     
     // Simulated Content Moderation (AI check representation)
@@ -94,9 +111,10 @@ app.get("/api/donations", async (req, res) => {
 });
 
 // --- Needs Routes ---
-app.post("/api/needs", async (req, res) => {
+app.post("/api/needs", authenticateToken, authorizeRoles("RECEIVER"), async (req, res) => {
   try {
-    const { receiverId, category, title, goal, description, city, state, urgency } = req.body;
+    const receiverId = (req as AuthRequest).user!.id;
+    const { category, title, goal, description, city, state, urgency } = req.body;
     
     // Simulated Abusive Language Check
     const abusiveWords = ["abuse", "scam"];
@@ -126,7 +144,7 @@ app.get("/api/needs", async (req, res) => {
 });
 
 // --- Admin Routes ---
-app.get("/api/admin/pending-kyc", async (req, res) => {
+app.get("/api/admin/pending-kyc", authenticateToken, authorizeRoles("ADMIN"), async (req, res) => {
   try {
     const users = await prisma.user.findMany({ where: { kycStatus: "PENDING" } });
     res.json(users);
@@ -135,7 +153,7 @@ app.get("/api/admin/pending-kyc", async (req, res) => {
   }
 });
 
-app.post("/api/admin/kyc/:id/approve", async (req, res) => {
+app.post("/api/admin/kyc/:id/approve", authenticateToken, authorizeRoles("ADMIN"), async (req, res) => {
   try {
     const user = await prisma.user.update({ where: { id: req.params.id }, data: { kycStatus: "VERIFIED" } });
     res.json(user);
@@ -144,7 +162,7 @@ app.post("/api/admin/kyc/:id/approve", async (req, res) => {
   }
 });
 
-app.post("/api/admin/posts/:type/:id/approve", async (req, res) => {
+app.post("/api/admin/posts/:type/:id/approve", authenticateToken, authorizeRoles("ADMIN"), async (req, res) => {
   try {
     const { type, id } = req.params;
     if (type === "donation") {
@@ -160,7 +178,7 @@ app.post("/api/admin/posts/:type/:id/approve", async (req, res) => {
   }
 });
 
-app.get("/api/admin/matches", async (req, res) => {
+app.get("/api/admin/matches", authenticateToken, authorizeRoles("ADMIN"), async (req, res) => {
   // Simple algorithm: Match APPROVED needs and donations with same category
   try {
     const needs = await prisma.need.findMany({ where: { status: "APPROVED" }, include: { receiver: true } });
@@ -184,7 +202,7 @@ app.get("/api/admin/matches", async (req, res) => {
   }
 });
 
-app.post("/api/admin/matches/approve", async (req, res) => {
+app.post("/api/admin/matches/approve", authenticateToken, authorizeRoles("ADMIN"), async (req, res) => {
   try {
     const { needId, donationId, matchScore } = req.body;
     const match = await prisma.match.create({
